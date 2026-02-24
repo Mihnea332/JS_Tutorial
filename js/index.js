@@ -1,56 +1,51 @@
-let player = {
-  name: "Per",
-  chips: 145,
-  sayHello: function () {
-    console.log("Hello!");
-  },
-};
-player.sayHello();
-let cards = [];
-let sum = 0;
-let hasBlackJack = false;
-let isAlive = false;
-let message = "";
-let messageEl = document.getElementById("message-el");
-let sumEl = document.getElementById("sum-el");
-let cardsEl = document.getElementById("cards-el");
-let playerEl = document.getElementById("player-el");
-playerEl.textContent = player.name + ": $" + player.chips;
-function getRandomCard() {
-  let randomCard = Math.floor(Math.random() * 13) + 1;
-  if (randomCard === 1) return 11;
-  else if (randomCard > 10) return 10;
-  return randomCard;
+let myLeads = [];
+const inputEl = document.getElementById("input-el");
+const inputBtn = document.getElementById("input-btn");
+const ulEl = document.getElementById("ul-el");
+const deleteBtn = document.getElementById("delete-btn");
+const tabBtn = document.getElementById("tab-btn");
+const leadsFromLocalStorage = JSON.parse(localStorage.getItem("myLeads"));
+if (leadsFromLocalStorage) {
+  myLeads = leadsFromLocalStorage;
+  render(myLeads);
 }
-function startGame() {
-  isAlive = true;
-  let firstCard = getRandomCard();
-  let secondCard = getRandomCard();
-  cards.push(firstCard);
-  cards.push(secondCard);
-  sum += firstCard + secondCard;
-  renderGame();
-}
-function renderGame() {
-  cardsEl.textContent = "Cards: ";
-  for (let i = 0; i < cards.length; i++) cardsEl.textContent += cards[i] + " ";
-  sumEl.textContent = "Sum: " + sum;
-  if (sum <= 20) {
-    message = "Do you want to draw a new card? 🙂";
-  } else if (sum === 21) {
-    message = "Wohoo! You've got Blackjack! 🥳";
-    hasBlackJack = true;
-  } else {
-    message = "You're out of the game! 😭";
-    isAlive = false;
+
+tabBtn.addEventListener("click", function () {
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    myLeads.push(tabs[0].url);
+    localStorage.setItem("myLeads", JSON.stringify(myLeads));
+    render(myLeads);
+  });
+});
+function render(leads) {
+  let listItems = "";
+  for (let i = 0; i < leads.length; i++) {
+    listItems += `
+        <li>
+            <a target='_blank' href='${leads[i]}'>
+                ${leads[i]}
+            </a>
+        </li>
+    `;
   }
-  messageEl.textContent = message;
+  ulEl.innerHTML = listItems;
 }
-function newCard() {
-  if (hasBlackJack === false && isAlive === true) {
-    let card = getRandomCard();
-    sum += card;
-    cards.push(card);
-    renderGame();
+deleteBtn.addEventListener("dblclick", function () {
+  localStorage.clear();
+  myLeads = [];
+  render(myLeads);
+});
+inputBtn.addEventListener("click", function () {
+  myLeads.push("https://" + inputEl.value);
+  inputEl.value = "";
+  localStorage.setItem("myLeads", JSON.stringify(myLeads));
+  render(myLeads);
+});
+inputEl.addEventListener("keydown", function (event) {
+  if (event.code === "Enter") {
+    myLeads.push("https://" + inputEl.value);
+    inputEl.value = "";
+    localStorage.setItem("myLeads", JSON.stringify(myLeads));
+    render(myLeads);
   }
-}
+});
